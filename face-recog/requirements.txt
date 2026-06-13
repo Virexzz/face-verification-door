@@ -1,0 +1,10 @@
+# Web Framework & Cross-Origin Resource Sharing
+Flask==3.0.3
+Flask-CORS==4.0.1
+
+# Image Processing, Machine Learning, & Math
+opencv-contrib-python==4.9.0.80
+numpy==1.26.4
+
+# HTTP Networking Client
+requests==2.32.3
