@@ -2,74 +2,87 @@ import React, { useState } from 'react';
 import axios from 'axios';
 
 function FaceEnrollModal({ snapshot, onDeny, onSuccess, backendUrl }) {
-  const [userName, setUserName] = useState('');
+  const [name, setName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorText, setErrorText] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!userName.trim()) {
-      setErrorText('An identity trace label string index is required.');
+    if (!name.trim()) {
+      setErrorText('Identifier parameter field required.');
       return;
     }
-
     setIsSubmitting(true);
     setErrorText('');
 
     try {
       const response = await axios.post(`${backendUrl}/enroll`, {
-        name: userName,
-        snapshot: snapshot // Transmits the cached photo to disk
+        name: name.trim(),
+        snapshot: snapshot
       });
 
       if (response.data.success) {
         onSuccess(response.data.message);
       } else {
-        setErrorText(response.data.error || 'Identity enrollment failed.');
+        setErrorText('Core engine registration write failure.');
         setIsSubmitting(false);
       }
-    } catch (error) {
-      setErrorText('Transmission pipeline exception communicating with master Node server.');
+    } catch (err) {
+      setErrorText('Network tracking drop during handshake.');
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content">
-        <h3>Enroll Captured Profile</h3>
-        <p>This captured image signature does not exist in our system. Save database record?</p>
-        
-        <div className="snapshot-frame">
-          <img 
-            src={`data:image/jpeg;base64,${snapshot}`} 
-            alt="Manual Snapshot Capture" 
-          />
+    <div className="hud-modal-overlay">
+      <div className="hud-modal-box">
+        <div className="hud-modal-header">
+          <div className="hud-scanner-line"></div>
+          <h2>⚠️ IDENTITY PROFILE CAPTURE</h2>
+          <span className="hud-sub">SECURE PORTAL ENROLLMENT PHASE</span>
         </div>
 
-        <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label>Assign Identity Tag Name:</label>
+        <div className="hud-modal-body">
+          <div className="hud-preview-pane">
+            <img src={`data:image/jpeg;base64,${snapshot}`} alt="Trace Snapshot" />
+            <div className="hud-corner tl"></div>
+            <div className="hud-corner tr"></div>
+            <div className="hud-corner bl"></div>
+            <div className="hud-corner br"></div>
+          </div>
+
+          <form onSubmit={handleSubmit} className="hud-enroll-form">
+            <label>ASSIGN IDENTITY SIGNATURE</label>
             <input 
               type="text" 
-              placeholder="e.g. Marcus Vance"
-              value={userName}
-              onChange={(e) => setUserName(e.target.value)}
+              placeholder="e.g. John Doe / Subject Alpha" 
+              value={name}
+              onChange={(e) => setName(e.target.value)}
               disabled={isSubmitting}
+              autoFocus
             />
-          </div>
+            
+            {errorText && <div className="hud-error-msg">⚡ {errorText}</div>}
 
-          {errorText && <p className="error-text">{errorText}</p>}
-
-          <div className="modal-actions">
-            <button type="button" className="btn btn-deny" onClick={onDeny} disabled={isSubmitting}>
-              Discard Profile
-            </button>
-            <button type="submit" className="btn btn-allow" disabled={isSubmitting}>
-              {isSubmitting ? 'Writing Entry...' : 'Allow & Save'}
-            </button>
-          </div>
-        </form>
+            <div className="hud-action-row">
+              <button 
+                type="submit" 
+                className="btn-hud btn-hud-confirm" 
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'ENROLLING...' : 'AUTHORIZE ENTRY'}
+              </button>
+              <button 
+                type="button" 
+                className="btn-hud btn-hud-cancel" 
+                onClick={onDeny} 
+                disabled={isSubmitting}
+              >
+                DISCARD & DENY
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );

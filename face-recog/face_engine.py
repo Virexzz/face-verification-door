@@ -57,6 +57,9 @@ def train_recognizer():
     if faces:
         recognizer.train(faces, np.array(labels))
         is_trained = True
+    else:
+        # Reset tracker flag if all users were deleted from matrix
+        is_trained = False
 
 def camera_worker():
     global video_cap, current_frame, is_feed_running
@@ -135,14 +138,15 @@ def capture():
     global current_frame
     with frame_lock:
         if current_frame is None:
-            return jsonify({"error": "Camera offline"}), 400
+            return jsonify({"success": false, "error": "Camera offline"}), 400
         frame_snapshot = current_frame.copy()
 
     gray = cv2.cvtColor(frame_snapshot, cv2.COLOR_BGR2GRAY)
     faces = cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=6, minSize=(80, 80))
 
     if len(faces) == 0:
-        return jsonify({"face_detected": False}), 200
+        # FIXED: Added explicit "success": true field for Node.js routing validation
+        return jsonify({"success": True, "face_detected": False}), 200
 
     x, y, w, h = sorted(faces, key=lambda f: f[2] * f[3], reverse=True)[0]
     face_roi = cv2.resize(gray[y:y+h, x:x+w], (200, 200))
@@ -158,6 +162,7 @@ def capture():
     marked_b64 = base64.b64encode(buffer).decode('utf-8')
 
     return jsonify({
+        "success": True,
         "face_detected": True,
         "snapshot": marked_b64,
         "known": known,
@@ -168,7 +173,15 @@ def capture():
 def register():
     data = request.json
     user_id = data["user_id"]
-    img_b64 = data["snapshot"]
+    img_b64 = data.get("snapshot")
+
+    # Wipe file trace if an access profile was deleted
+    if img_b64 is None:
+        target_img = f"{FACES_DIR}/user_{user_id}.png"
+        if os.path.exists(target_img):
+            os.remove(target_img)
+        train_recognizer() 
+        return jsonify({"registered": False, "message": "De-authorization updated."}), 200
 
     img_bytes = base64.b64decode(img_b64)
     nparr = np.frombuffer(img_bytes, np.uint8)

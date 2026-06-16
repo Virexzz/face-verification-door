@@ -5,8 +5,8 @@ Servo doorServo;
 const int SERVO_PIN = 9;       
 
 
-const int LOCKED_POS = 0;     
-const int UNLOCKED_POS = 90;   
+const int LOCKED_POS = 120;     
+const int UNLOCKED_POS = 180;   
 const unsigned long DELAY_INTERVAL = 5000; 
 
 void setup() {
